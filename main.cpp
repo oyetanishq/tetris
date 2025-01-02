@@ -51,7 +51,11 @@ void disableRawMode() {
 typedef std::vector<std::vector<int>> Board;
 typedef std::vector<std::vector<int>> Piece;
 
-void pc(Board board, int score) {
+/**
+ * Print Canvas on screen,
+ * with stats
+ */
+void pc(Board board, int score, int speed) {
     clearScreen();
 
     for (int i = 0; i < board.size(); ++i) {
@@ -65,44 +69,19 @@ void pc(Board board, int score) {
 
     std::cout << "<!" << bar << "!>" << std::endl;
     std::cout << "score: " << score << std::endl;
+    std::cout << "speed: " << (1200 - speed) << std::endl;
+
+    board.clear();
 }
 
 Piece pieces[] = {
-    {
-        {0,0,0},
-        {1,1,0},
-        {1,1,0}
-    },
-    {
-        {1,1,1},
-        {1,0,0},
-        {0,0,0}
-    },
-    {
-        {1,1,1},
-        {0,0,0},
-        {0,0,0}
-    },
-    {
-        {1,1,1},
-        {0,0,1},
-        {0,0,0}
-    },
-    {
-        {1,1,0},
-        {0,1,1},
-        {0,0,0}
-    },
-    {
-        {0,1,1},
-        {1,1,0},
-        {0,0,0}
-    },
-    {
-        {1,1,1},
-        {0,1,0},
-        {0,0,0}
-    }
+    {{0,0,0},{1,1,0},{1,1,0}}, // square
+    {{1,1,1},{1,0,0},{0,0,0}}, // L
+    {{1,1,1},{0,0,0},{0,0,0}}, // Bar
+    {{1,1,1},{0,0,1},{0,0,0}}, // Mirror L
+    {{1,1,0},{0,1,1},{0,0,0}}, // Z
+    {{0,1,1},{1,1,0},{0,0,0}}, // Mirror Z
+    {{1,1,1},{0,1,0},{0,0,0}}  // T
 };
 
 Board addPiece(Board board, Piece piece, std::pair<int, int> position) {
@@ -137,7 +116,6 @@ bool checkValidMove(Board board, Piece piece, std::pair<int, int> position) {
         return true;
     }
     catch (std::exception& e) {
-        std::cout << e.what() << std::endl;
         return false;
     }
 }
@@ -164,14 +142,14 @@ bool isMoveSet(Board board, Piece piece, std::pair<int, int> position) {
     }
 }
 
-bool isOver(Board& board) {
+bool isGameOver(Board board) {
     for (int i = 0; i < board[0].size(); ++i)
         if (board[0][i]) return true;
 
     return false;
 }
 
-Piece rotateClockwise(Piece matrix, int times = 1) {
+Piece rotatePiece(Piece matrix, int times = 1) {
     times %= 4;
 
     while (times--) {
@@ -188,7 +166,7 @@ Piece rotateClockwise(Piece matrix, int times = 1) {
     return matrix;
 }
 
-Board checkBarAndDelete(Board& board) {
+Board deleteCompleteBar(Board board) {
     Board newBoard(board.size(), (std::vector<int>(board[0].size(), 0)));
 
     for (int i = board.size() - 1, x = board.size() - 1; i >= 0; --i) {
@@ -213,21 +191,22 @@ signed main() {
      * Board Initialize
      */
     int horizontal = 10, vertical = 15;
-    int score = 0;
     Board board(vertical, (std::vector<int>(horizontal, 0)));
 
     /**
-     * Refresh every 2 seconds
+     * Game Configuration
      */
+    std::pair<int, int> pos;
+    int score = 0, rotation = 0, piece = -1, difficulty, baseSpeed = 600, topSpeed = 200;
+
+    std::cout << "Enter Difficulty (1-10): ";
+    std::cin >> difficulty;
+
+    srand(time(0));
 
 #ifndef _WIN32
     enableRawMode();
 #endif
-
-    std::pair<int, int> pos = { 0, 6 };
-    int rotation = 0;
-    int piece = -1;
-    srand(time(0));
 
     while (true) {
         int ch = getKey();
@@ -243,35 +222,39 @@ signed main() {
         int oldRotation = rotation;
 
         switch (ch) {
-        case 119: rotation++; break;
-        case 97: pos.second--; break;
-        case 100: pos.second++; break;
-        case 115: pos.first++; break;
+        case 119: rotation++; break;   // W
+        case 97: pos.second--; break;  // A
+        case 100: pos.second++; break; // D
+        case 115: pos.first++; break;   // S
         }
 
-        Piece pieceRotated = rotateClockwise(pieces[piece], rotation);
+        Piece pieceRotated = rotatePiece(pieces[piece], rotation);
+        int speed = std::max(baseSpeed - (score * (int)std::pow(difficulty % 11, 2)), topSpeed);
 
-        if (checkValidMove(board, pieceRotated, pos)) pc(addPiece(board, pieceRotated, pos), score);
+        if (checkValidMove(board, pieceRotated, pos)) pc(addPiece(board, pieceRotated, pos), score, speed);
         else { pos = oldPos; rotation = oldRotation; }
 
         if (isMoveSet(board, pieceRotated, pos)) {
             piece = -1;
             pos.first--;
             board = addPiece(board, pieceRotated, pos);
-            board = checkBarAndDelete(board);
+            board = deleteCompleteBar(board);
 
-            if (isOver(board))
+            if (isGameOver(board))
                 break;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(600));
+        /**
+         * Refresh canvas every baseSpeed + speed,
+         * which is maximum of baseSpeed less than (difficulty)^2 times your score or baseSpeed,
+         * it's variable and keeps on increasing with your score
+         */
+        std::this_thread::sleep_for(std::chrono::milliseconds(speed));
     }
 
 #ifndef _WIN32
     disableRawMode();
 #endif
 
-    std::cout << std::endl;
-
-    return 0;
+    return EXIT_SUCCESS;
 }
