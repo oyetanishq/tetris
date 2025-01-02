@@ -2,7 +2,7 @@
 
 Recreating the classic Tetris game for terminal using C++.
 
-<video alt="demo-tetris" src="./public/demo.mp4"></video>
+![tetris](https://github.com/user-attachments/assets/a3ecd1b6-cd98-4882-b4e1-00289ffb01aa)
 
 #### **_Features:_**
 1.   **Classic Controls**: Move blocks with `A/S/D`, rotate them with `W`.
