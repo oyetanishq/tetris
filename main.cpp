@@ -58,18 +58,39 @@ typedef std::vector<std::vector<int>> Piece;
 void pc(Board board, int score, int speed) {
     clearScreen();
 
+    std::string spaces(22, ' ');
+    std::string bar((board[0].size() << 1) + 1, '=');
+    std::string halfSpaces(board[0].size() - 1, ' ');
+
+    std::cout << std::endl;
+
     for (int i = 0; i < board.size(); ++i) {
+        if (i == 2) std::cout << "   GAME CONTROLS      ";
+        else if (i == 3) std::cout << "  ===============     ";
+        else if (i == 5) std::cout << "        rotate: W     ";
+        else if (i == 6) std::cout << "     move left: A     ";
+        else if (i == 7) std::cout << "     move down: S     ";
+        else if (i == 8) std::cout << "    move right: D     ";
+        else if (i == 10) std::cout << "  ---------------     ";
+        else if (i == 11) std::cout << "          quit: Q     ";
+        else if (i == 12)std::cout << "       restart: R     ";
+        else std::cout << spaces;
+
         for (int j = 0; j < board[i].size(); ++j)
             std::cout << (!j ? "<!" : "") << (board[i][j] ? "[]" : " .") << (j == board[i].size() - 1 ? " !>" : "");
+
+        if (i == 2) std::cout << "        STATS";
+        else if (i == 3) std::cout << "    =============";
+        else if (i == 5) std::cout << "     SCORE: " << (score * 10);
+        else if (i == 6) std::cout << "     SPEED: " << (1200 - speed);
+        else std::cout << spaces;
 
         std::cout << std::endl;
     }
 
-    std::string bar(board[0].size() * 2 + 1, '=');
-
-    std::cout << "<!" << bar << "!>" << std::endl;
-    std::cout << "score: " << score << std::endl;
-    std::cout << "speed: " << (1200 - speed) << std::endl;
+    std::cout << spaces << "<!" << bar << "!>" << std::endl;
+    std::cout << spaces << std::endl;
+    std::cout << spaces << halfSpaces << "TETRIS" << std::endl;
 
     board.clear();
 }
@@ -190,7 +211,7 @@ signed main() {
     /**
      * Board Initialize
      */
-    int horizontal = 10, vertical = 15;
+    int horizontal = 10, vertical = 20;
     Board board(vertical, (std::vector<int>(horizontal, 0)));
 
     /**
@@ -198,6 +219,7 @@ signed main() {
      */
     std::pair<int, int> pos;
     int score = 0, rotation = 0, piece = -1, difficulty, baseSpeed = 600, topSpeed = 200;
+    bool isPlaying = true;
 
     std::cout << "Enter Difficulty (1-10): ";
     std::cin >> difficulty;
@@ -208,7 +230,7 @@ signed main() {
     enableRawMode();
 #endif
 
-    while (true) {
+    while (isPlaying) {
         int ch = getKey();
 
         if (piece < 0) {
@@ -222,11 +244,15 @@ signed main() {
         int oldRotation = rotation;
 
         switch (ch) {
-        case 119: rotation++; break;   // W
-        case 97: pos.second--; break;  // A
-        case 100: pos.second++; break; // D
-        case 115: pos.first++; break;   // S
+        case 119: rotation++; break;            // W
+        case 97: pos.second--; break;           // A
+        case 100: pos.second++; break;          // D
+        case 115: pos.first++; break;            // S
+        case 113: isPlaying = false; break;     // Q
+        case 114: score = 0; piece = -1; break; // R
         }
+
+        if (piece < 0) continue;
 
         Piece pieceRotated = rotatePiece(pieces[piece], rotation);
         int speed = std::max(baseSpeed - (score * (int)std::pow(difficulty % 11, 2)), topSpeed);
