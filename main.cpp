@@ -249,7 +249,12 @@ signed main() {
         case 100: pos.second++; break;          // D
         case 115: pos.first++; break;            // S
         case 113: isPlaying = false; break;     // Q
-        case 114: score = 0; piece = -1; break; // R
+        case 114:
+            score = 0;
+            piece = -1;
+            Board newBoard(vertical, (std::vector<int>(horizontal, 0)));
+            board = newBoard;
+            break; // R
         }
 
         if (piece < 0) continue;
